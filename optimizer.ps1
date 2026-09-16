@@ -1,73 +1,60 @@
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+# เคลียร์ตัวแปรเก่าเพื่อป้องกันการค้างในความจำ
+$form = $null
 
-# Check for Administrator privileges
+# ตรวจสอบสิทธิ์ Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    [System.Windows.Forms.MessageBox]::Show("Please right-click and 'Run as Administrator'!", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show("กรุณารันคำสั่งนี้ในฐานะ Administrator เท่านั้น!", "สิทธิ์ไม่เพียงพอ", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
     exit
 }
 
-# Create Main Form
-$form = New-Object System.Windows.Forms.Form
-$form.Text = "ULTRAZNEX MULTI-TOOL OPTIMIZER v2.1"
-$form.Size = New-Object System.Drawing.Size(550, 520)
-$form.StartPosition = "CenterScreen"
-$form.BackColor = [System.Drawing.Color]::FromArgb(25, 25, 25)
-$form.FormBorderStyle = "FixedSingle"
-$form.MaximizeBox = $false
+# โหลดโมดูลสำหรับวาดหน้าต่างยุคใหม่
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName WindowsBase
 
-# Header Label
-$headerLabel = New-Object System.Windows.Forms.Label
-$headerLabel.Text = "ULTRAZNEX GAMING PERFORMANCE"
-$headerLabel.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
-$headerLabel.ForeColor = [System.Drawing.Color]::FromArgb(0, 255, 128)
-$headerLabel.Size = New-Object System.Drawing.Size(500, 35)
-$headerLabel.Location = New-Object System.Drawing.Point(25, 20)
-$headerLabel.TextAlign = "Center"
-$form.Controls.Add($headerLabel)
+# ออกแบบหน้าต่างรูปแบบโมเดิร์นด้วย XAML (WPF)
+[xml]$xaml = @"
+<Window xmlns="http://microsoft.com"
+        xmlns:x="http://microsoft.com"
+        Title="ULTRAZNEX MULTI-TOOL v3.0" Height="480" Width="520" 
+        WindowStartupLocation="CenterScreen" Background="#1E1E1E" ResizeMode="NoResize">
+    <StackPanel Margin="20">
+        <!-- Header -->
+        <TextBlock Text="ULTRAZNEX GAMING PERFORMANCE" FontSize="18" FontWeight="Bold" Foreground="#00FF80" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+        <TextBlock Text="OS Preference: Windows 10 / 11  |  Target: Lowest Input Latency" FontSize="10" Foreground="Gray" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+        
+        <!-- Buttons Group -->
+        <Button Name="BtnNet" Content="🌐 OPTIMIZE NETWORK &amp; DNS" Height="42" Background="#2850B4" Foreground="White" FontWeight="Bold" FontSize="11" Margin="0,5" Cursor="Hand"/>
+        <Button Name="BtnSys" Content="⚡ OPTIMIZE INPUT LAG" Height="42" Background="#7828B4" Foreground="White" FontWeight="Bold" FontSize="11" Margin="0,5" Cursor="Hand"/>
+        <Button Name="BtnAll" Content="🔥 RUN ALL TWEAKS + APPLY ULTRAZNEX PLAN" Height="42" Background="#E65A0A" Foreground="White" FontWeight="Bold" FontSize="11" Margin="0,5" Cursor="Hand"/>
+        <Button Name="BtnClean" Content="🧹 CLEAN JUNK &amp; FLUSH DNS" Height="42" Background="#507828" Foreground="White" FontWeight="Bold" FontSize="11" Margin="0,5" Cursor="Hand"/>
+        <Button Name="BtnRestore" Content="⏪ RESTORE TO WINDOWS DEFAULTS" Height="42" Background="#961E1E" Foreground="White" FontWeight="Bold" FontSize="11" Margin="0,5,0,25" Cursor="Hand"/>
+        
+        <!-- Status Box -->
+        <Border Background="#282828" CornerRadius="3" Padding="10">
+            <TextBlock Name="TxtStatus" Text="STATUS: Ready (Select an option above to begin)" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+        </Border>
+    </StackPanel>
+</Window>
+"@
 
-# Sub Label
-$subLabel = New-Object System.Windows.Forms.Label
-$subLabel.Text = "OS Reference: Windows 10/11  |  Target: Lowest Input Latency"
-$subLabel.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
-$subLabel.ForeColor = [System.Drawing.Color]::Gray
-$subLabel.Size = New-Object System.Drawing.Size(500, 20)
-$subLabel.Location = New-Object System.Drawing.Point(25, 55)
-$subLabel.TextAlign = "Center"
-$form.Controls.Add($subLabel)
+# อ่านโครงสร้างหน้าต่างเข้าสู่หน่วยความจำ
+$reader = New-Object System.Xml.XmlNodeReader $xaml
+$form = [Windows.Markup.XamlReader]::Load($reader)
 
-# Status Box
-$statusBox = New-Object System.Windows.Forms.Label
-$statusBox.Text = "STATUS: Ready (Select an option below to begin)"
-$statusBox.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-$statusBox.ForeColor = [System.Drawing.Color]::White
-$statusBox.BackColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
-$statusBox.Size = New-Object System.Drawing.Size(480, 40)
-$statusBox.Location = New-Object System.Drawing.Point(25, 410)
-$statusBox.TextAlign = "MiddleCenter"
-$form.Controls.Add($statusBox)
+# ดึงรายชื่อปุ่มควบคุมมาผูกกับโค้ดทำงาน
+$BtnNet = $form.FindName("BtnNet")
+$BtnSys = $form.FindName("BtnSys")
+$BtnAll = $form.FindName("BtnAll")
+$BtnClean = $form.FindName("BtnClean")
+$BtnRestore = $form.FindName("BtnRestore")
+$TxtStatus = $form.FindName("TxtStatus")
 
-# Button Creation Helper Function
-function Create-CustomButton($text, $x, $y, $color, $scriptBlock) {
-    $btn = New-Object System.Windows.Forms.Button
-    $btn.Text = $text
-    $btn.Size = New-Object System.Drawing.Size(480, 45)
-    $btn.Location = New-Object System.Drawing.Point($x, $y)
-    $btn.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-    $btn.ForeColor = [System.Drawing.Color]::White
-    $btn.BackColor = $color
-    $btn.FlatStyle = "Flat"
-    $btn.FlatAppearance.BorderSize = 0
-    $btn.Cursor = "Hand"
-    $btn.Add_Click($scriptBlock)
-    $form.Controls.Add($btn)
-}
+# --- ส่วนคำสั่งการทำงานเมื่อกดปุ่ม ---
 
-# 1. Action: Optimize Network
-$netClick = {
-    $statusBox.Text = "Optimizing network stack & DNS... Please wait..."
-    $statusBox.ForeColor = [System.Drawing.Color]::Yellow
+$BtnNet.Add_Click({
+    $TxtStatus.Text = "Optimizing network stack & DNS... Please wait..."
     [System.Windows.Forms.Application]::DoEvents()
     
     netsh int tcp set global autotuninglevel=normal
@@ -80,14 +67,11 @@ $netClick = {
     netsh int tcp set global rsc=disabled
     netsh int tcp set global fastopen=enabled
     
-    $statusBox.Text = "SUCCESS: Network optimized successfully!"
-    $statusBox.ForeColor = [System.Drawing.Color]::Lime
-}
+    $TxtStatus.Text = "SUCCESS: Network optimized successfully!"
+})
 
-# 2. Action: Optimize System Latency
-$sysClick = {
-    $statusBox.Text = "Applying registry latency tweaks... Please wait..."
-    $statusBox.ForeColor = [System.Drawing.Color]::Yellow
+$BtnSys.Add_Click({
+    $TxtStatus.Text = "Applying registry latency tweaks... Please wait..."
     [System.Windows.Forms.Application]::DoEvents()
     
     reg add "HKCU\Control Panel\Keyboard" /v KeyboardDelay /t REG_SZ /d 0 /f
@@ -98,14 +82,11 @@ $sysClick = {
     bcdedit /set disabledynamictick yes
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d 0 /f
     
-    $statusBox.Text = "SUCCESS: System responsiveness optimized!"
-    $statusBox.ForeColor = [System.Drawing.Color]::Lime
-}
+    $TxtStatus.Text = "SUCCESS: System responsiveness optimized!"
+})
 
-# 3. Action: Full Optimization + Power Plan
-$allClick = {
-    $statusBox.Text = "Deploying full tweaks & installing ULTRAZNEX plan..."
-    $statusBox.ForeColor = [System.Drawing.Color]::Orange
+$BtnAll.Add_Click({
+    $TxtStatus.Text = "Deploying full tweaks & installing ULTRAZNEX plan..."
     [System.Windows.Forms.Application]::DoEvents()
     
     powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61
@@ -116,48 +97,31 @@ $allClick = {
     reg add "HKCU\Control Panel\Keyboard" /v KeyboardDelay /t REG_SZ /d 0 /f
     reg add "HKCU\Control Panel\Keyboard" /v KeyboardSpeed /t REG_SZ /d 31 /f
     
-    $statusBox.Text = "SUCCESS: Full tweaks active! Please restart your PC."
-    $statusBox.ForeColor = [System.Drawing.Color]::Lime
-}
+    $TxtStatus.Text = "SUCCESS: Full tweaks active! Please restart your PC."
+})
 
-# 4. Action: Clean Junk Files
-$cleanClick = {
-    $statusBox.Text = "Purging system junk & flushing DNS cache..."
-    $statusBox.ForeColor = [System.Drawing.Color]::Yellow
+$BtnClean.Add_Click({
+    $TxtStatus.Text = "Purging system junk & flushing DNS cache..."
     [System.Windows.Forms.Application]::DoEvents()
     
     ipconfig /flushdns
     Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
     
-    $statusBox.Text = "SUCCESS: Junk files and network cache cleared!"
-    $statusBox.ForeColor = [System.Drawing.Color]::Lime
-}
+    $TxtStatus.Text = "SUCCESS: Junk files and network cache cleared!"
+})
 
-# 5. Action: Restore to Default
-$restoreClick = {
-    $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to revert all tweaks back to Windows defaults?", "Confirm Restore", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    if ($result -eq "Yes") {
-        $statusBox.Text = "Restoring factory default parameters..."
-        $statusBox.ForeColor = [System.Drawing.Color]::Red
-        [System.Windows.Forms.Application]::DoEvents()
-        
-        netsh int tcp reset
-        netsh int ip reset
-        reg add "HKCU\Control Panel\Keyboard" /v KeyboardDelay /t REG_SZ /d 1 /f
-        powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e
-        powercfg -delete e9a42b02-d5df-448d-aa00-03f14749eb61
-        
-        $statusBox.Text = "SUCCESS: Default parameters restored! Please reboot."
-        $statusBox.ForeColor = [System.Drawing.Color]::Cyan
-    }
-}
+$BtnRestore.Add_Click({
+    $TxtStatus.Text = "Restoring factory default parameters..."
+    [System.Windows.Forms.Application]::DoEvents()
+    
+    netsh int tcp reset
+    netsh int ip reset
+    reg add "HKCU\Control Panel\Keyboard" /v KeyboardDelay /t REG_SZ /d 1 /f
+    powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e
+    powercfg -delete e9a42b02-d5df-448d-aa00-03f14749eb61
+    
+    $TxtStatus.Text = "SUCCESS: Default parameters restored! Please reboot."
+})
 
-# Render GUI Controls (Buttons)
-Create-CustomButton "🌐 OPTIMIZE NETWORK & DNS" 25 90 ([System.Drawing.Color]::FromArgb(40, 80, 180)) $netClick
-Create-CustomButton "⚡ OPTIMIZE INPUT LAG" 25 150 ([System.Drawing.Color]::FromArgb(120, 40, 180)) $sysClick
-Create-CustomButton "🔥 RUN ALL TWEAKS + APPLY ULTRAZNEX PLAN" 25 210 ([System.Drawing.Color]::FromArgb(230, 90, 10)) $allClick
-Create-CustomButton "🧹 CLEAN JUNK & FLUSH DNS" 25 270 ([System.Drawing.Color]::FromArgb(80, 120, 40)) $cleanClick
-Create-CustomButton "⏪ RESTORE TO WINDOWS DEFAULTS" 25 330 ([System.Drawing.Color]::FromArgb(150, 30, 30)) $restoreClick
-
-# Launch Application Form Window
-$form.ShowDialog()
+# เปิดแสดงผลหน้าต่างโปรแกรม
+$form.ShowDialog() | Out-Null
